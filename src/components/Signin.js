@@ -37,14 +37,14 @@ const SignIn = ({ setClientId, onClose }) => {
       let otpResponse;
       if (isMobile) {
         otpResponse = await axios.post(
-          "http://localhost:8000/sendOTPforLoginViaNumber",
+          "https://api.vibrantlifespa.com:8001/sendOTPforLoginViaNumber",
           {
             mobilePhone: inputValue,
           },
         );
       } else {
         otpResponse = await axios.post(
-          "http://localhost:8000/sendOTPforLoginViaEmail",
+          "https://api.vibrantlifespa.com:8001/sendOTPforLoginViaEmail",
           {
             email: inputValue,
           },
@@ -90,7 +90,7 @@ const SignIn = ({ setClientId, onClose }) => {
       setOtpError("");
 
       const cartResponse = await axios.post(
-        "http://localhost:8000/createCartforUser",
+        "https://api.vibrantlifespa.com:8001/createCartforUser",
         {
           clientInformation: isMobile
             ? { phoneNumber: inputValue }
@@ -100,7 +100,7 @@ const SignIn = ({ setClientId, onClose }) => {
       );
 
       const verifyResponse = await axios.post(
-        "http://localhost:8000/verifyLoginUsingOTP",
+        "https://api.vibrantlifespa.com:8001/verifyLoginUsingOTP",
         {
           cartId: cartResponse.data.data.data.createCart.cart.id,
           cartOwnershipCodeId,
@@ -116,14 +116,14 @@ const SignIn = ({ setClientId, onClose }) => {
       let clientInfoResponse;
       if (isMobile) {
         clientInfoResponse = await axios.post(
-          "http://localhost:8000/getClientInfoViaNumber",
+          "https://api.vibrantlifespa.com:8001/getClientInfoViaNumber",
           {
             mobilePhone: inputValue,
           },
         );
       } else {
         clientInfoResponse = await axios.post(
-          "http://localhost:8000/getClientInfo",
+          "https://api.vibrantlifespa.com:8001/getClientInfo",
           {
             email: inputValue,
           },
