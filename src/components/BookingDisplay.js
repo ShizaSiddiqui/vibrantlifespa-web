@@ -33,7 +33,7 @@ export default function BookingDisplayMain() {
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [isLoadingDates, setIsLoadingDates] = useState(false);
   const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const firstVisitRef = useRef(null);
   const procedureRef = useRef(null);
   const aestheticianRef = useRef(null);
@@ -90,12 +90,13 @@ export default function BookingDisplayMain() {
 
   useEffect(() => {
     const fetchAppointmentData = async (retryCount = 5) => {
+      
+      setLoading(true); // Start loading
       let extractedClientId;
       if (!isFirstVisit) {
         extractedClientId = clientId.split(":").pop();
-        console.log("extracted id: ", extractedClientId);
       }
-
+  
       try {
         const response = await fetch(
           "https://api.vibrantlifespa.com:8001/createAppoinmentCart",
@@ -105,47 +106,40 @@ export default function BookingDisplayMain() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              locationId:
-                "urn:blvd:Location:90184c75-0c8b-48d8-8a8a-39c9a22e6099",
+              locationId: "urn:blvd:Location:90184c75-0c8b-48d8-8a8a-39c9a22e6099",
               clientId: isFirstVisit
                 ? "00f42824-4154-4e07-8240-e694d2c2a7c7"
                 : extractedClientId,
             }),
-          },
+          }
         );
-
-        // Check if the response is okay (status code 200-299)
+  
         if (!response.ok) {
           throw new Error(`Server error: ${response.statusText}`);
         }
-
+  
         const data = await response.json();
-        console.log("data: ", data);
-
+  
         const { availableCategories, id: newCartId } =
           data.data?.data?.createCart?.cart || {};
         setCartId(newCartId); // Store the cart ID
-
+  
         if (Array.isArray(availableCategories)) {
-          // Filter out the unwanted categories by name
           const filteredCategories = availableCategories.filter(
             (category) =>
               ![
-                "Add-on",
+                "Add-On",
                 "Investor's family & Staffs Pricing",
                 "Memberships",
                 "Gift Cards",
-              ].includes(category.name),
+              ].includes(category.name)
           );
-
-          const procedures = filteredCategories.map(
-            (category) => category.name,
-          );
-
-          // Create maps for items and staff variants
+  
+          const procedures = filteredCategories.map((category) => category.name);
+  
           const procedureMap = {};
           const staffMap = {};
-
+  
           filteredCategories.forEach((category) => {
             if (category.availableItems && category.availableItems.length > 0) {
               const item = category.availableItems[0];
@@ -153,7 +147,7 @@ export default function BookingDisplayMain() {
                 itemId: item.id,
                 name: item.name,
               };
-
+  
               if (item.staffVariants) {
                 item.staffVariants.forEach((variant) => {
                   staffMap[variant.staff.displayName] = variant.id;
@@ -161,49 +155,69 @@ export default function BookingDisplayMain() {
               }
             }
           });
-
+  
           const aestheticians = Object.keys(staffMap);
-
+  
           setProcedures(procedures);
           setAestheticians(aestheticians);
           setProcedureItemMap(procedureMap);
           setStaffVariantMap(staffMap);
-
-          console.log("procedureItemMap:", procedureMap);
-          console.log("staffVariantMap:", staffMap);
         }
       } catch (error) {
         console.error("Error fetching appointment data:", error);
-
         if (retryCount > 0) {
-          console.log(`Retrying... attempts left: ${retryCount}`);
-          setTimeout(() => fetchAppointmentData(retryCount - 1), 2000); // Retry after 2 seconds
-        } else {
-          console.error("Failed after multiple attempts");
+          setTimeout(() => fetchAppointmentData(retryCount - 1), 2000);
         }
+      } finally {
+        setLoading(false); // Stop loading
       }
     };
-
+  
     if (isFirstVisit === true || (isFirstVisit === false && clientId)) {
       fetchAppointmentData();
     }
   }, [isFirstVisit, clientId]);
+  
+
+  useEffect(() => {
+    // Create script element
+    const script = document.createElement('script');
+    script.innerHTML = `
+      (function(h,o,t,j,a,r){
+        h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+        h._hjSettings={hjid:5184761,hjsv:6};
+        a=o.getElementsByTagName('head')[0];
+        r=o.createElement('script');r.async=1;
+        r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+        a.appendChild(r);
+      })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+    `;
+    
+    // Add script to document
+    document.head.appendChild(script);
+
+    // Cleanup function to remove script when component unmounts
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []); // Empty dependency array ensures this effect runs only once
+
 
   useEffect(() => {
     const fetchAvailableDates = async () => {
       if (!appointmentcartId) return;
-      setIsLoadingDates(true);
-
+      setIsLoadingDates(true); // Set loading to true when fetching data
+  
       const today = new Date();
       const twoWeeksLater = new Date();
       twoWeeksLater.setDate(today.getDate() + 56);
-
+  
       const requestBody = {
         cartId: appointmentcartId,
         searchRangeLower: formatDateToString(today),
         searchRangeUpper: formatDateToString(twoWeeksLater),
       };
-
+  
       try {
         const response = await fetch(
           "https://api.vibrantlifespa.com:8001/appointmentAvailableDatesSlots",
@@ -213,13 +227,13 @@ export default function BookingDisplayMain() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(requestBody),
-          },
+          }
         );
-
+  
         const result = await response.json();
         if (result.status && result.data?.data?.cartBookableDates) {
           const dates = result.data.data.cartBookableDates.map(
-            (slot) => slot.date,
+            (slot) => slot.date
           );
           setAvailableDates(dates);
           console.log("Available dates:", dates);
@@ -227,12 +241,13 @@ export default function BookingDisplayMain() {
       } catch (error) {
         console.error("Error fetching available dates:", error);
       } finally {
-        setIsLoadingDates(false);
+        setIsLoadingDates(false); // Set loading to false when data is fetched
       }
     };
-
+  
     fetchAvailableDates();
-  }, [appointmentcartId, aestheticians]);
+  }, [appointmentcartId, selectedProcedure, selectedAesthetician]);
+  
 
   const formatDateToString = (date) => {
     return date.toISOString().split("T")[0];
@@ -275,15 +290,15 @@ export default function BookingDisplayMain() {
   };
   // When rendering dates:
   const handleDateClick = async (selectedDate) => {
-    console.log("Selected date:", selectedDate);
+ 
     if (!selectedDate || !cartId) return;
 
     // Format the date to 'YYYY-MM-DD'
     const formattedDate = new Date(selectedDate).toISOString().split("T")[0];
-    console.log("Formatted date:", formattedDate);
+
 
     setSelectedDate(selectedDate);
-    console.log("Selected date:", selectedDate);
+
     setSelectedTime(""); // Reset selected time when date changes
     setIsLoadingTimeSlots(true);
 
@@ -301,10 +316,9 @@ export default function BookingDisplayMain() {
           }),
         },
       );
-      console.log("body sending to api: ", appointmentcartId, formattedDate);
+  
       const result = await response.json();
-      console.log("time result:", result);
-
+  
       if (result.status && result.data?.data?.cartBookableTimes) {
         const timeSlots = result.data.data.cartBookableTimes.map((slot) => {
           const startTime = new Date(slot.startTime); // This converts the time with the timezone offset
@@ -349,8 +363,7 @@ export default function BookingDisplayMain() {
     setFirstName(updatedFirstName);
     setLastName(updatedLastName);
 
-    console.log("first name: ", updatedFirstName);
-    console.log("last name: ", updatedLastName);
+  
 
     // Format phone number to digits only and ensure it is in the correct format (+ country code)
     let formattedPhoneNumber = mobile.replace(/[^\d]/g, ""); // Removes anything that's not a number
@@ -377,7 +390,6 @@ export default function BookingDisplayMain() {
       mobilePhone: formattedPhoneNumber, // Use the correctly formatted phone number
       pronoun: "Mr/Mrs",
     };
-    console.log("request body: ", requestBody);
 
     try {
       if (isFirstVisit) {
@@ -392,13 +404,13 @@ export default function BookingDisplayMain() {
             body: JSON.stringify(requestBody),
           },
         );
-        console.log(createClientResponse);
+
         if (!createClientResponse.ok) {
           throw new Error("Failed to create client");
         }
 
         const clientData = await createClientResponse.json();
-        console.log("Client created: ", clientData);
+       
 
         const clientInfoRequestBody = {
           cartId: appointmentcartId,
@@ -409,7 +421,7 @@ export default function BookingDisplayMain() {
             phoneNumber: formattedPhoneNumber,
           },
         };
-        console.log("client info request body: ", clientInfoRequestBody);
+
 
         const clientInfoResponse = await fetch(
           "https://api.vibrantlifespa.com:8001/addClientInfoToAppoinmentCart",
@@ -427,7 +439,7 @@ export default function BookingDisplayMain() {
         }
 
         const clientInfoData = await clientInfoResponse.json();
-        console.log("Client Info response(first time user):", clientInfoData);
+      
 
         // After client creation, checkout the appointment cart for first-time users
         const checkoutResponse = await fetch(
@@ -450,7 +462,7 @@ export default function BookingDisplayMain() {
         }
 
         const checkoutData = await checkoutResponse.json();
-        console.log("Checkout response (First-time user):", checkoutData);
+
       } else {
         // For existing users, just checkout the appointment cart
         const checkoutResponse = await fetch(
@@ -473,7 +485,7 @@ export default function BookingDisplayMain() {
         }
 
         const checkoutData = await checkoutResponse.json();
-        console.log("Checkout response (Existing user):", checkoutData);
+
       }
 
       // Add client info to the appointment cart after creating/checking out the cart
@@ -486,7 +498,7 @@ export default function BookingDisplayMain() {
           phoneNumber: formattedPhoneNumber,
         },
       };
-      console.log("client info request body: ", clientInfoRequestBody);
+
 
       const clientInfoResponse = await fetch(
         "https://api.vibrantlifespa.com:8001/addClientInfoToAppoinmentCart",
@@ -504,7 +516,7 @@ export default function BookingDisplayMain() {
       }
 
       const clientInfoData = await clientInfoResponse.json();
-      console.log("Client Info response:", clientInfoData);
+    
 
       // If everything is successful, show confirmation and trigger confetti
       setIsConfirmed(true);
@@ -525,7 +537,7 @@ export default function BookingDisplayMain() {
   const handleTimeSelection = async (time, timeId) => {
     setSelectedTime(time);
     setSelectedTimeId(timeId);
-    console.log("Selected time id:", timeId);
+
 
     try {
       const response = await fetch(
@@ -543,7 +555,7 @@ export default function BookingDisplayMain() {
       );
 
       const data = await response.json();
-      console.log("Add selected time to cart response:", data);
+     
       console.log(
         "time added id: ",
         data.data.data.reserveCartBookableItems.cart.id,
@@ -584,7 +596,7 @@ export default function BookingDisplayMain() {
     const itemInfo = procedureItemMap[selectedProcedure];
     if (itemInfo) {
       setSelectedItemId(itemInfo.itemId);
-      console.log("Selected item ID:", itemInfo.itemId);
+
     } else {
       setSelectedItemId("");
     }
@@ -597,7 +609,6 @@ export default function BookingDisplayMain() {
     // Get the staff variant ID
     const variantId = staffVariantMap[selectedStaff];
     setSelectedStaffVariantId(variantId);
-    console.log("Selected staff variant ID:", variantId);
 
     if (variantId && selectedItemId && cartId) {
       try {
@@ -615,9 +626,8 @@ export default function BookingDisplayMain() {
             }),
           },
         );
-        console.log("body sending to api: ", cartId, selectedItemId, variantId);
+
         const data = await response.json();
-        console.log("Add item to cart response:", data);
         if (
           data.data?.errors &&
           data.data.errors.length > 0 &&
@@ -632,7 +642,7 @@ export default function BookingDisplayMain() {
             data.data?.data?.addCartSelectedBookableItem?.cart.id,
           );
         }
-        console.log("Appointment cart id:", appointmentcartId);
+
       } catch (error) {
         console.error("Error adding item to cart:", error);
       }
@@ -748,40 +758,50 @@ export default function BookingDisplayMain() {
           )}
 
           {/* Only show procedure selection after first visit choice is made */}
-          {(isFirstVisit === true || (isFirstVisit === false && clientId)) && (
-            <div
-              ref={procedureRef}
-              className="mb-4 transition-opacity duration-500 ease-in-out opacity-100"
+          
+          {loading ? (
+  <div className="mb-4">
+    <div className="text-lg font-semibold block mb-2">Select Procedure</div>
+    <div className="flex justify-center items-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderColor: '#5FD4D0', borderTopColor: '#5FD4D0' }}></div>
+    </div>
+  </div>
+) : (
+  (isFirstVisit === true || (isFirstVisit === false && clientId)) && (
+    <div
+      ref={procedureRef}
+      className="mb-4 transition-opacity duration-500 ease-in-out opacity-100"
+    >
+      <label
+        htmlFor="procedure"
+        className="text-lg font-semibold block"
+      >
+        Select Procedure
+      </label>
+      <div className="relative">
+        <select
+          id="procedure"
+          value={selectedProcedure}
+          onChange={handleProcedureChange}
+          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <option value="" className="text-muted-foreground">
+            Choose a Procedure
+          </option>
+          {procedures.map((procedure) => (
+            <option
+              key={procedure}
+              value={procedure}
+              className="text-sm text-foreground"
             >
-              <label
-                htmlFor="procedure"
-                className="text-lg font-semibold block"
-              >
-                Select Procedure
-              </label>
-              <div className="relative">
-                <select
-                  id="procedure"
-                  value={selectedProcedure}
-                  onChange={handleProcedureChange}
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="" className="text-muted-foreground">
-                    Choose a Procedure
-                  </option>
-                  {procedures.map((procedure) => (
-                    <option
-                      key={procedure}
-                      value={procedure}
-                      className="text-sm text-foreground"
-                    >
-                      {procedure}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
+              {procedure}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  )
+)}
 
           {selectedProcedure && (
             <div
@@ -821,120 +841,117 @@ export default function BookingDisplayMain() {
             </div>
           )}
 
-          {selectedProcedure && selectedAesthetician && (
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold mb-4">Select Date</h2>
+{selectedProcedure && selectedAesthetician && (
+  <div className="mb-4">
+    <h2 className="text-lg font-semibold mb-4">Select Date</h2>
 
-              {/* Month navigation */}
-              <div className="flex justify-between items-center mb-3">
-                <button
-                  onClick={() =>
-                    setCurrentMonth(
-                      new Date(
-                        currentMonth.getFullYear(),
-                        currentMonth.getMonth() - 1,
-                        1,
-                      ),
-                    )
-                  }
-                  className="rounded hover:bg-gray-300"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
+    {/* Show spinner on initial load or when loading dates */}
+    {(!availableDates || isLoadingDates) ? (
+      <div className="flex justify-center items-center mb-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderColor: '#5FD4D0', borderTopColor: '#5FD4D0' }}></div>
+      </div>
+    ) : (
+      <>
+        {/* Month navigation */}
+        <div className="flex justify-between items-center mb-3">
+          <button
+            onClick={() =>
+              setCurrentMonth(
+                new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
+              )
+            }
+            className="rounded hover:bg-gray-300"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
 
-                <span className="font-[GeistSans,'GeistSans Fallback'] text-sm font-medium">
-                  {currentMonth.toLocaleString("default", {
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentMonth(
-                      new Date(
-                        currentMonth.getFullYear(),
-                        currentMonth.getMonth() + 1,
-                        1,
-                      ),
-                    )
-                  }
-                  className="rounded hover:bg-gray-300 "
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
+          <span className="font-[GeistSans,'GeistSans Fallback'] text-sm font-medium">
+            {currentMonth.toLocaleString("default", {
+              month: "long",
+              year: "numeric",
+            })}
+          </span>
 
-              {/* Days of the week header */}
-              <div className="grid grid-cols-7 gap-1.5 text-center mb-2">
-                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-                  <div key={day} className="text-center text-sm">
-                    {day}
-                  </div>
-                ))}
-              </div>
+          <button
+            onClick={() =>
+              setCurrentMonth(
+                new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
+              )
+            }
+            className="rounded hover:bg-gray-300"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
 
-              {/* Date cells */}
-              <div className="grid grid-cols-7 gap-3 text-center ">
-                {getDaysInMonth(currentMonth).map((dayInfo, idx) => (
-                  <div key={idx} className="">
-                    {dayInfo ? (
-                      <button
-                        className={` flex items-center justify-center rounded-md 
-        ${availableDates.includes(dayInfo.dateString) ? "font-bold" : ""} 
-${
-  selectedDate && dayInfo.date.toDateString() === selectedDate.toDateString()
-    ? "bg-[#5FD4D0] text-white" // Selected state
-    : "hover:bg-red-500 hover:text-red-500" // Using Tailwind's predefined red color
-}
-        ${!availableDates.includes(dayInfo.dateString) ? "opacity-50 cursor-not-allowed" : ""}`}
-                        onClick={() =>
-                          dayInfo &&
-                          availableDates.includes(dayInfo.dateString) &&
-                          handleDateClick(dayInfo.date)
-                        }
-                      >
-                        <span className="border p-[2.5px] border-[#d9d9d9] rounded-md text-[13px]  hover:bg-[#d9d9d9] hover:text-[black] min-w-7">
-                          {dayInfo.date.getDate()}
-                        </span>
-                      </button>
-                    ) : (
-                      <span className="text-[red]">&nbsp;</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <h2 className="text-lg font-semibold mt-4 mb-2">Select Time</h2>
-              <div className="space-y-4">
-                {isLoadingTimeSlots ? (
-                  <div className="text-center py-4">
-                    Loading available times...
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    {availableTimeSlots.map((slot) => (
-                      <button
-                        key={slot.id}
-                        onClick={() => handleTimeSelection(slot.time, slot.id)}
-                        className={`w-full p-2 text-sm rounded-lg transition-colors duration-200
-                ${selectedTime === slot.time ? "bg-[#5FD4D0] text-white" : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"}`}
-                      >
-                        {slot.time}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {!isLoadingTimeSlots &&
-                  availableTimeSlots.length === 0 &&
-                  selectedDate && (
-                    <p className="text-center text-gray-500">
-                      No available time slots for this date. Kindly select
-                      another date
-                    </p>
-                  )}
-              </div>
+        {/* Days of the week header */}
+        <div className="grid grid-cols-7 gap-1.5 text-center mb-2">
+          {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+            <div key={day} className="text-center text-sm">
+              {day}
             </div>
-          )}
+          ))}
+        </div>
+
+        {/* Date cells */}
+        <div className="grid grid-cols-7 gap-3 text-center">
+          {getDaysInMonth(currentMonth).map((dayInfo, idx) => (
+            <div key={idx}>
+              {dayInfo ? (
+                <button
+                  className={`flex items-center justify-center rounded-md 
+                    ${availableDates.includes(dayInfo.dateString) ? "font-bold" : ""} 
+                    ${selectedDate && dayInfo.date.toDateString() === selectedDate.toDateString()
+                    ? "bg-[#5FD4D0] text-white" // Selected state
+                    : "hover:bg-red-500 hover:text-red-500"} 
+                    ${!availableDates.includes(dayInfo.dateString) ? "opacity-50 cursor-not-allowed" : ""}`}
+                  onClick={() =>
+                    dayInfo && availableDates.includes(dayInfo.dateString) && handleDateClick(dayInfo.date)
+                  }
+                >
+                  <span className="border p-[2.5px] border-[#d9d9d9] rounded-md text-[13px] hover:bg-[#d9d9d9] hover:text-[black] min-w-7">
+                    {dayInfo.date.getDate()}
+                  </span>
+                </button>
+              ) : (
+                <span className="text-[red]">&nbsp;</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </>
+    )}
+  
+    {/* Time Selection */}
+    <h2 className="text-lg font-semibold mt-4 mb-2">Select Time</h2>
+    <div className="space-y-4">
+      {isLoadingTimeSlots ? (
+        <div className="text-center py-4">Loading available times...</div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {availableTimeSlots.map((slot) => (
+            <button
+              key={slot.id}
+              onClick={() => handleTimeSelection(slot.time, slot.id)}
+              className={`w-full p-2 text-sm rounded-lg transition-colors duration-200
+                ${selectedTime === slot.time ? "bg-[#5FD4D0] text-white" : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"}`}
+            >
+              {slot.time}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!isLoadingTimeSlots && availableTimeSlots.length === 0 && selectedDate && (
+        <p className="text-center text-gray-500">
+          No available time slots for this date. Kindly select another date
+        </p>
+      )}
+    </div>
+  </div>
+)}
+
+
 
           {selectedDate &&
             selectedTime &&
