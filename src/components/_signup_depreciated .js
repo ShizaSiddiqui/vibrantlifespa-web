@@ -35,13 +35,16 @@ const SignUp = ({ setClientId }) => {
     };
 
     try {
-      const response = await fetch("https://api.vibrantlifespa.com:8001/createClient", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "https://api.vibrantlifespa.com:8001/createClient",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
         },
-        body: JSON.stringify(requestBody),
-      });
+      );
 
       const data = await response.json();
 
