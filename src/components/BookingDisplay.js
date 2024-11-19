@@ -340,6 +340,7 @@ export default function BookingDisplayMain() {
     }
   };
 
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -390,6 +391,24 @@ export default function BookingDisplayMain() {
 
     try {
       if (isFirstVisit) {
+        //client info
+        const createClientNoteResponse = await fetch('https://api.vibrantlifespa.com:8001/addClientNoteToAppoinmentCart', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            cartId: appointmentcartId,
+            note: `Type:Digital - Name: ${updatedFirstName} ${updatedLastName} - Email: ${email} - Phone: ${formattedPhoneNumber}`
+          }),
+        });
+        console.log(createClientNoteResponse);
+        if (!createClientNoteResponse.ok) {
+          throw new Error('Failed to create client');
+        }
+        const clientNoteData = await createClientNoteResponse.json();
+        console.log("Client created: ", clientNoteData);
+        
         // For first-time users, create a new client
         const createClientResponse = await fetch(
           "https://api.vibrantlifespa.com:8001/createClient",
@@ -406,7 +425,7 @@ export default function BookingDisplayMain() {
           throw new Error("Failed to create client");
         }
 
-        const clientData = await createClientResponse.json();
+
 
         const clientInfoRequestBody = {
           cartId: appointmentcartId,
