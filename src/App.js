@@ -13,8 +13,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/booking" element={<BookingDisplayMain />} />
+        {/* <Route path="/" element={<HomePage />} /> */}
+        <Route path="/" element={<BookingDisplayMain />} />
         <Route path="/signin" element={<SignIn setClientId={setClientId} />} />
       </Routes>
     </Router>
