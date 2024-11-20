@@ -2,6 +2,83 @@ import React, { useState, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import confetti from "canvas-confetti";
 import SignIn from "./Signin.js";
+import { loadStripe } from '@stripe/stripe-js';
+import {
+  PaymentElement,
+  Elements,
+  useStripe,
+  useElements
+} from '@stripe/react-stripe-js';
+import {ExpressCheckoutElement} from '@stripe/react-stripe-js';
+
+
+const stripePromise = loadStripe("pk_live_51PpC5qDKlQeK4p1VuJZfUVUXQvWXVYX7ST1pd1Nd7q3ndS0tsrR6ENm5E4KumRp8661lUhfFF1NV8r8hncvEcdSN00fxa6AR9D");
+
+
+const PaymentForm = ({ onSuccess, firstName, email, mobile, handleSubmit }) => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
+
+  const handleExpressCheckout = async (event) => {
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    try {
+      const { error, paymentIntent } = await event.complete();
+
+      if (error) {
+        setPaymentError(error.message);
+      } else if (paymentIntent.status === 'succeeded') {
+        const syntheticEvent = new Event('submit');
+        syntheticEvent.preventDefault = () => {};
+        await handleSubmit(syntheticEvent);
+        onSuccess();
+      }
+    } catch (err) {
+      setPaymentError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="rounded-lg bg-gray-50 p-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          Secure Your Appointment
+        </h3>
+        <p className="text-sm text-gray-600">
+          $29 to hold your appointment with our certified Aesthetician. 
+          This amount will be fully credited towards your first procedure.
+        </p>
+      </div>
+
+      {paymentError && (
+        <div className="rounded-lg bg-red-50 p-4 text-red-600 text-sm">
+          {paymentError}
+        </div>
+      )}
+
+      <div className="mb-4">
+        <ExpressCheckoutElement
+          options={{
+            paymentMethodOrder: ['google_pay', 'apple_pay']
+          }}
+          onConfirm={handleExpressCheckout}
+        />
+      </div>
+
+      {isProcessing && (
+        <div className="flex items-center justify-center p-4">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#5FD4D0] mr-2" />
+          <span className="text-gray-600">Processing payment...</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 
 
 
@@ -46,9 +123,54 @@ export default function BookingDisplayMain() {
   const [selectedStaffVariantId, setSelectedStaffVariantId] = useState("");
   const [selectedItemId, setSelectedItemId] = useState("");
   const [selectedTimeId, setSelectedTimeId] = useState("");
+  const [clientSecret, setClientSecret] = useState(null);
+  const [showPayment, setShowPayment] = useState(false);
+
 
   const scrollToRef = (ref) => {
     ref.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+
+  const createPaymentIntent = async () => {
+    try {
+      const response = await fetch('https://api.vibrantlifespa.com:8001/create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currency: 'usd',
+          servicesTotal: 2900, // $29.00
+          tip: 0
+        }),
+      });
+      
+      const data = await response.json();
+      if (data && data.client_secret) {
+        setClientSecret(data.client_secret);
+        console.log('Client secret:', data.client_secret);
+      } else {
+        console.error('Failed to retrieve client_secret');
+      }
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
+    }
+  };
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setShowPayment(true);
+    await createPaymentIntent();
+  };
+
+  const handlePaymentSuccess = async () => {
+    setIsConfirmed(true);
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#5FD4D0'],
+    });
   };
 
   useEffect(() => {
@@ -63,7 +185,7 @@ export default function BookingDisplayMain() {
   useEffect(() => {
     if (clientId) {
       setIsSignedIn(true);
-      setIsSignInOpen(false); // Close sign-in modal after successful sign-in
+      setIsSignInOpen(false); 
     }
   }, [clientId]);
   useEffect(() => {
@@ -92,7 +214,7 @@ export default function BookingDisplayMain() {
 
   useEffect(() => {
     const fetchAppointmentData = async (retryCount = 5) => {
-      setLoading(true); // Start loading
+      setLoading(true); 
       let extractedClientId;
       if (!isFirstVisit) {
         extractedClientId = clientId.split(":").pop();
@@ -340,7 +462,6 @@ export default function BookingDisplayMain() {
     }
   };
 
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -422,7 +543,7 @@ export default function BookingDisplayMain() {
         );
 
         if (!createClientResponse.ok) {
-          throw new Error("Failed to create client");
+          console.log("Failed to create client");
         }
 
 
@@ -467,13 +588,11 @@ export default function BookingDisplayMain() {
             }),
           },
         );
-
         if (!checkoutResponse.ok) {
           throw new Error(
             "Failed to checkout appointment cart for first-time user",
           );
         }
-
         const checkoutData = await checkoutResponse.json();
       } else {
         // For existing users, just checkout the appointment cart
@@ -990,11 +1109,33 @@ export default function BookingDisplayMain() {
             </div>
           )}
            {selectedDate &&
-            selectedTime &&
-            (isFirstVisit === true || selectedProcedure) && (
-              <div ref={personalInfoRef}>
-                <h2 className="text-lg font-semibold mb-2">Your Information</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
+        selectedTime &&
+        (isFirstVisit === true || selectedProcedure) && (
+          <div ref={personalInfoRef}>
+            {showPayment && clientSecret ? (
+              <Elements 
+                stripe={stripePromise} 
+                options={{
+                  clientSecret,
+                  appearance: {
+                    theme: 'stripe',
+                    variables: {
+                      colorPrimary: '#5FD4D0',
+                    }
+                  }
+                }}
+              >
+                <PaymentForm 
+                  onSuccess={handlePaymentSuccess}
+                  firstName={firstName}
+                  email={email}
+                  mobile={mobile}
+                  handleSubmit={handleSubmit}
+                />
+              </Elements>
+            ) : (
+                <form onSubmit={handleFormSubmit} className="space-y-4">
+                  <h2 className="text-lg font-semibold mb-2">Your Information</h2>
                   <div>
                     <label
                       htmlFor="name"
@@ -1075,6 +1216,7 @@ export default function BookingDisplayMain() {
                     Schedule Now
                   </button>
                 </form>
+                 )}
               </div>
             )}
         </div>
