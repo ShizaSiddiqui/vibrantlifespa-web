@@ -32,7 +32,7 @@ jobs:
       run: |
         echo "${SSH_KEY}" > ssh_key
         chmod 600 ssh_key
-        ssh -tt -o StrictHostKeyChecking=no -i ssh_key ubuntu@182.185.84.237 "echo Connection successful"
+        ssh -tt -o StrictHostKeyChecking=no -i ssh_key ubuntu@<PUBLIC_IP> "echo Connection successful"
 
     - name: Deploy to AWS Server
       env:
@@ -40,7 +40,7 @@ jobs:
       run: |
         echo "${SSH_KEY}" > ssh_key
         chmod 600 ssh_key
-        ssh -tt -o StrictHostKeyChecking=no -i ssh_key ubuntu@182.185.84.237 << EOF
+        ssh -tt -o StrictHostKeyChecking=no -i ssh_key ubuntu@<PUBLIC_IP> << EOF
           cd /var/www/booking.vibrantlifespa.com/html/
           sudo rm -rf vibrantlifespa-web public src
           git clone https://github.com/ShizaSiddiqui/vibrantlifespa-web.git
