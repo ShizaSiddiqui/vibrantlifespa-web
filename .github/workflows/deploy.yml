@@ -16,7 +16,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: 18  # Use a stable Node.js version
+        node-version: 23.2.0
 
     - name: Install Dependencies
       run: npm install --legacy-peer-deps
@@ -32,7 +32,7 @@ jobs:
       run: |
         echo "${SSH_KEY}" > ssh_key
         chmod 600 ssh_key
-        ssh -i ssh_key -o StrictHostKeyChecking=no ubuntu@182.185.84.237 << EOF
+        ssh -o StrictHostKeyChecking=no -i ssh_key ubuntu@182.185.84.237 << EOF
           cd /var/www/booking.vibrantlifespa.com/html/
           sudo rm -rf vibrantlifespa-web public src
           git clone https://github.com/ShizaSiddiqui/vibrantlifespa-web.git
