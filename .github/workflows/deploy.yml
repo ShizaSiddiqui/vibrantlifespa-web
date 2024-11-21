@@ -26,17 +26,19 @@ jobs:
         CI: false  # Prevent warnings from breaking the build
       run: npm run build
 
-    - name: Deploy to AWS Server
+   - name: Deploy to AWS Server
       env:
         SSH_KEY: ${{ secrets.SSH_KEY }}  # Add your private SSH key in GitHub Secrets
       run: |
         echo "${SSH_KEY}" > ssh_key
         chmod 600 ssh_key
-        ssh -i ssh_key -o StrictHostKeyChecking=no <USER>@<SERVER> << 'EOF'
-        cd /var/www/booking.vibrantlifespa.com/html/
-        sudo rm -rf vibrantlifespa-web public src
-        git clone https://github.com/ShizaSiddiqui/vibrantlifespa-web.git
-        sudo mv vibrantlifespa-web/* .
-        npm i --legacy-peer-deps
-        npm run build
-        EOF
+        bash -c "
+        ssh -i ssh_key -o StrictHostKeyChecking=no <USER>@<SERVER> '
+          cd /var/www/booking.vibrantlifespa.com/html/
+          sudo rm -rf vibrantlifespa-web public src
+          git clone https://github.com/ShizaSiddiqui/vibrantlifespa-web.git
+          sudo mv vibrantlifespa-web/* .
+          npm install --legacy-peer-deps
+          npm run build
+        '
+        "
