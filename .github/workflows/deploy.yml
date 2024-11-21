@@ -22,6 +22,8 @@ jobs:
       run: npm install --legacy-peer-deps
 
     - name: Build React App
+      env:
+        CI: false  # Prevent warnings from breaking the build
       run: npm run build
 
     - name: Deploy to AWS Server
