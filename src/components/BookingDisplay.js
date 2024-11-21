@@ -893,6 +893,9 @@ export default function BookingDisplayMain() {
           <h1 className="text-2xl font-bold mb-6 text-center" data-id="18">
             Let's get you scheduled
           </h1>
+          <div className="absolute bottom-1 right-2 text-[8px] text-gray-400">
+            v1.0.0
+          </div>
           {isSignedIn ? (
             <h2 className="text-lg font-semibold mb-4 text-center">Welcome!</h2>
           ) : (
