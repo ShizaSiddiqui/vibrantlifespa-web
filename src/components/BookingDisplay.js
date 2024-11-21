@@ -15,28 +15,92 @@ import {ExpressCheckoutElement} from '@stripe/react-stripe-js';
 const stripePromise = loadStripe("pk_live_51PpC5qDKlQeK4p1VuJZfUVUXQvWXVYX7ST1pd1Nd7q3ndS0tsrR6ENm5E4KumRp8661lUhfFF1NV8r8hncvEcdSN00fxa6AR9D");
 
 
-const PaymentForm = ({ onSuccess, firstName, email, mobile, handleSubmit }) => {
+const PaymentForm = ({ 
+  onClose,  
+  firstName, 
+  email, 
+  mobile, 
+  handleSubmit 
+}) => {
+  const stripe = useStripe();
+  const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
 
-  const handleExpressCheckout = async (event) => {
+  const handleExpressCheckout = async () => {
+    console.log('Processing payment...');
+    if (!stripe || !elements) {
+      console.error('Stripe.js has not loaded yet');
+      setPaymentError('Stripe.js has not loaded yet. Please try again later.');
+      return;
+    }
+
     setIsProcessing(true);
     setPaymentError(null);
 
     try {
-      const { error, paymentIntent } = await event.complete();
+      // Submit the payment data collected by the ExpressCheckoutElement
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        console.error('Error during form submission:', submitError.message);
+        setPaymentError(`Form submission failed: ${submitError.message}`);
+        setIsProcessing(false);
+        return;
+      }
+
+      // Create the PaymentIntent and obtain clientSecret
+      const response = await fetch("https://api.vibrantlifespa.com:8001/create-payment-intent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currency: "usd",
+          servicesTotal: 2900, // $29.00
+          tip: 0,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Server error: ${errorText}`);
+        setPaymentError(`Failed to create payment intent: ${response.statusText}`);
+        setIsProcessing(false);
+        return;
+      }
+
+      const data = await response.json();
+      const clientSecret = data?.client_secret;
+
+      if (!clientSecret) {
+        console.error('Client secret is missing in response:', data);
+        setPaymentError('Failed to retrieve client_secret. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Confirm the PaymentIntent
+      const { error } = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        redirect: 'if_required' // This prevents automatic redirection
+      });
 
       if (error) {
-        setPaymentError(error.message);
-      } else if (paymentIntent.status === 'succeeded') {
-        const syntheticEvent = new Event('submit');
-        syntheticEvent.preventDefault = () => {};
-        await handleSubmit(syntheticEvent);
-        onSuccess();
+        console.error('Error confirming payment:', error.message);
+        setPaymentError(`Payment confirmation failed: ${error.message}`);
+        setIsProcessing(false);
+      } else {
+        console.log('Payment succeeded');
+        // Close the payment window
+        onClose();
+        
+        // Run handleSubmit
+        await handleSubmit();
       }
     } catch (err) {
+      console.error('Unexpected error occurred:', err);
       setPaymentError('An unexpected error occurred. Please try again.');
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -48,7 +112,7 @@ const PaymentForm = ({ onSuccess, firstName, email, mobile, handleSubmit }) => {
           Secure Your Appointment
         </h3>
         <p className="text-sm text-gray-600">
-          $29 to hold your appointment with our certified Aesthetician. 
+          $29 to hold your appointment with our certified Aesthetician.
           This amount will be fully credited towards your first procedure.
         </p>
       </div>
@@ -60,12 +124,7 @@ const PaymentForm = ({ onSuccess, firstName, email, mobile, handleSubmit }) => {
       )}
 
       <div className="mb-4">
-        <ExpressCheckoutElement
-          options={{
-            paymentMethodOrder: ['google_pay', 'apple_pay']
-          }}
-          onConfirm={handleExpressCheckout}
-        />
+        <ExpressCheckoutElement onConfirm={handleExpressCheckout} />
       </div>
 
       {isProcessing && (
@@ -1113,20 +1172,20 @@ export default function BookingDisplayMain() {
         (isFirstVisit === true || selectedProcedure) && (
           <div ref={personalInfoRef}>
             {showPayment && clientSecret ? (
-              <Elements 
-                stripe={stripePromise} 
+             <Elements
+                stripe={stripePromise}
                 options={{
                   clientSecret,
                   appearance: {
-                    theme: 'stripe',
+                    theme: "stripe",
                     variables: {
-                      colorPrimary: '#5FD4D0',
-                    }
-                  }
+                      colorPrimary: "#5FD4D0",
+                    },
+                  },
                 }}
               >
                 <PaymentForm 
-                  onSuccess={handlePaymentSuccess}
+                  onClose={() => setShowPayment(false)}
                   firstName={firstName}
                   email={email}
                   mobile={mobile}
