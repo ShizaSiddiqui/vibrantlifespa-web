@@ -26,7 +26,7 @@ jobs:
         CI: false  # Prevent warnings from breaking the build
       run: npm run build
 
-   - name: Deploy to AWS Server
+    - name: Deploy to AWS Server
       env:
         SSH_KEY: ${{ secrets.SSH_KEY }}  # Add your private SSH key in GitHub Secrets
       run: |
