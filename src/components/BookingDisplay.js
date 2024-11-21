@@ -361,7 +361,7 @@ export default function BookingDisplayMain() {
     if (isFirstVisit === true || (isFirstVisit === false && clientId)) {
       fetchAppointmentData();
     }
-  }, [isFirstVisit, clientId]);
+  }, [isFirstVisit, isSignedIn]);
 
   useEffect(() => {
     // Create script element
@@ -401,6 +401,7 @@ export default function BookingDisplayMain() {
         searchRangeUpper: formatDateToString(twoWeeksLater),
       };
 
+
       try {
         const response = await fetch(
           "https://api.vibrantlifespa.com:8001/appointmentAvailableDatesSlots",
@@ -419,7 +420,7 @@ export default function BookingDisplayMain() {
             (slot) => slot.date,
           );
           setAvailableDates(dates);
-          console.log("Available dates:", dates);
+          console.log("Available dates 1:", dates);
         }
       } catch (error) {
         console.error("Error fetching available dates:", error);
@@ -429,7 +430,7 @@ export default function BookingDisplayMain() {
     };
 
     fetchAvailableDates();
-  }, [appointmentcartId, selectedProcedure, selectedAesthetician]);
+  }, [selectedProcedure, appointmentcartId]);
 
   const formatDateToString = (date) => {
     return date.toISOString().split("T")[0];
@@ -798,6 +799,42 @@ export default function BookingDisplayMain() {
     const variantId = staffVariantMap[selectedStaff];
     setSelectedStaffVariantId(variantId);
 
+    try {
+      let extractedClientId;
+      if (!isFirstVisit) {
+        extractedClientId = clientId.split(":").pop();
+      }
+      console.log("Creating appointment cart...");
+      const response = await fetch(
+        "https://api.vibrantlifespa.com:8001/createAppoinmentCart",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            locationId:
+              "urn:blvd:Location:90184c75-0c8b-48d8-8a8a-39c9a22e6099",
+            clientId: isFirstVisit
+              ? "00f42824-4154-4e07-8240-e694d2c2a7c7"
+              : extractedClientId,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      const { availableCategories, id: newCartId } =
+        data.data?.data?.createCart?.cart || {};
+      setCartId(newCartId); // Store the cart ID
+    } catch (error) {
+      console.error(error);
+    }
+
     if (variantId && selectedItemId && cartId) {
       try {
         const response = await fetch(
@@ -883,6 +920,7 @@ export default function BookingDisplayMain() {
           >
             <SignIn
               setClientId={setClientId}
+          
               onClose={() => setIsSignInOpen(false)}
             />
           </div>
@@ -893,6 +931,9 @@ export default function BookingDisplayMain() {
           <h1 className="text-2xl font-bold mb-6 text-center" data-id="18">
             Let's get you scheduled
           </h1>
+          <div className="fixed bottom-1 right-2 text-[8px] text-gray-400">
+            v1.1.0
+          </div>
           {isSignedIn ? (
             <h2 className="text-lg font-semibold mb-4 text-center">Welcome!</h2>
           ) : (
