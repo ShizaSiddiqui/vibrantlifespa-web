@@ -3,7 +3,7 @@ name: Deploy Vibrant Life Med Spa to AWS
 on:
   push:
     branches:
-      - main  # Change to your main branch if different
+      - main
 
 jobs:
   deploy:
@@ -16,23 +16,31 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: 23.2.0
+        node-version: 18.x
 
     - name: Install Dependencies
       run: npm install --legacy-peer-deps
 
     - name: Build React App
       env:
-        CI: false  # Prevent warnings from breaking the build
+        CI: false
       run: npm run build
 
-    - name: Deploy to AWS Server
+    - name: Debug SSH Connection
       env:
-        SSH_KEY: ${{ secrets.SSH_KEY }}  # Add your private SSH key in GitHub Secrets
+        SSH_KEY: ${{ secrets.SSH_KEY }}
       run: |
         echo "${SSH_KEY}" > ssh_key
         chmod 600 ssh_key
-        ssh -o StrictHostKeyChecking=no -i ssh_key ubuntu@182.185.84.237 << EOF
+        ssh -tt -o StrictHostKeyChecking=no -i ssh_key ubuntu@182.185.84.237 "echo Connection successful"
+
+    - name: Deploy to AWS Server
+      env:
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+      run: |
+        echo "${SSH_KEY}" > ssh_key
+        chmod 600 ssh_key
+        ssh -tt -o StrictHostKeyChecking=no -i ssh_key ubuntu@182.185.84.237 << EOF
           cd /var/www/booking.vibrantlifespa.com/html/
           sudo rm -rf vibrantlifespa-web public src
           git clone https://github.com/ShizaSiddiqui/vibrantlifespa-web.git
