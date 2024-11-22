@@ -32,7 +32,7 @@ jobs:
       run: |
         echo "${SSH_KEY}" > ssh_key
         chmod 600 ssh_key
-        ssh -tt -o StrictHostKeyChecking=no -i ssh_key ubuntu@172.31.26.102 "echo Connection successful"
+        ssh -tt -o StrictHostKeyChecking=no -i ssh_key ubuntu@3.16.57.86 "echo Connection successful"
 
     - name: Deploy to AWS Server
       env:
