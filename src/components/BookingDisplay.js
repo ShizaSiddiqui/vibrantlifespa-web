@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import confetti from "canvas-confetti";
 import SignIn from "./Signin.js";
 import { loadStripe } from '@stripe/stripe-js';
+import logo from "../images/bookingflowlogo.png";
 import {
   PaymentElement,
   Elements,
@@ -171,6 +172,7 @@ export default function BookingDisplayMain() {
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [isLoadingDates, setIsLoadingDates] = useState(false);
   const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const firstVisitRef = useRef(null);
   const procedureRef = useRef(null);
@@ -271,6 +273,8 @@ export default function BookingDisplayMain() {
     }
   }, [selectedDate, selectedTime]);
 
+
+  // creating appointment cart for first time
   useEffect(() => {
     const fetchAppointmentData = async (retryCount = 5) => {
       setLoading(true); 
@@ -605,9 +609,7 @@ export default function BookingDisplayMain() {
         if (!createClientResponse.ok) {
           console.log("Failed to create client");
         }
-
-
-
+        
         const clientInfoRequestBody = {
           cartId: appointmentcartId,
           clientInformation: {
@@ -773,10 +775,6 @@ export default function BookingDisplayMain() {
     return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
   };
 
-  const handleEditAppointment = () => {
-    setIsConfirmed(false);
-    scrollToRef(firstVisitRef);
-  };
 
   const handleProcedureChange = (e) => {
     const selectedProcedure = e.target.value;
@@ -792,6 +790,7 @@ export default function BookingDisplayMain() {
   };
 
   const handleAestheticianChange = async (e) => {
+    
     const selectedStaff = e.target.value;
     setSelectedAesthetician(selectedStaff);
 
@@ -804,7 +803,7 @@ export default function BookingDisplayMain() {
       if (!isFirstVisit) {
         extractedClientId = clientId.split(":").pop();
       }
-      console.log("Creating appointment cart...");
+      console.log("Creating appointment cart for second time");
       const response = await fetch(
         "https://api.vibrantlifespa.com:8001/createAppoinmentCart",
         {
@@ -928,6 +927,10 @@ export default function BookingDisplayMain() {
       )}
       <div className="font-[GeistSans,'GeistSans Fallback'] min-h-screen w-full flex items-center justify-center bg-gray-50 py-10 px-4">
         <div className="w-[350px]  mx-auto p-[1.5rem] bg-white rounded-lg shadow-lg space-y-8">
+        <div className="flex justify-center ">
+          <img src={logo} alt="Logo" className="h-[8rem] w-auto" />
+        </div>
+
           <h1 className="text-2xl font-bold mb-6 text-center" data-id="18">
             Let's get you scheduled
           </h1>
