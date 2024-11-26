@@ -802,9 +802,12 @@ export default function BookingDisplayMain() {
   };
 
   const handleAestheticianChange = async (e) => {
-    setAvailableTimeSlots([]);
+    
     const selectedStaff = e.target.value;
     setSelectedAesthetician(selectedStaff);
+
+    setAvailableTimeSlots([]);
+    setSelectedDate(null);
 
     // Get the staff variant ID
     const variantId = staffVariantMap[selectedStaff];
