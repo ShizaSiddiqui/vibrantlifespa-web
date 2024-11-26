@@ -29,27 +29,32 @@ const PaymentForm = ({
   const [paymentError, setPaymentError] = useState(null);
 
   const handleExpressCheckout = async () => {
-    console.log('Processing payment...');
+    console.log('Starting Express Checkout...');
+    
     if (!stripe || !elements) {
-      console.error('Stripe.js has not loaded yet');
+      console.error('Stripe.js has not loaded yet.');
       setPaymentError('Stripe.js has not loaded yet. Please try again later.');
       return;
     }
+
+    console.log('Stripe and Elements loaded:', { stripe, elements });
 
     setIsProcessing(true);
     setPaymentError(null);
 
     try {
-      // Submit the payment data collected by the ExpressCheckoutElement
+      console.log('Submitting payment data via ExpressCheckoutElement...');
       const { error: submitError } = await elements.submit();
+      
       if (submitError) {
         console.error('Error during form submission:', submitError.message);
         setPaymentError(`Form submission failed: ${submitError.message}`);
         setIsProcessing(false);
         return;
       }
+      console.log('Form submission successful.');
 
-      // Create the PaymentIntent and obtain clientSecret
+      console.log('Creating PaymentIntent...');
       const response = await fetch("https://api.vibrantlifespa.com:8001/create-payment-intent", {
         method: "POST",
         headers: {
@@ -62,6 +67,7 @@ const PaymentForm = ({
         }),
       });
 
+      console.log('PaymentIntent creation response status:', response.status);
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Server error: ${errorText}`);
@@ -71,6 +77,7 @@ const PaymentForm = ({
       }
 
       const data = await response.json();
+      console.log('PaymentIntent creation response data:', data);
       const clientSecret = data?.client_secret;
 
       if (!clientSecret) {
@@ -79,12 +86,13 @@ const PaymentForm = ({
         setIsProcessing(false);
         return;
       }
+      console.log('Retrieved clientSecret:', clientSecret);
 
-      // Confirm the PaymentIntent
+      console.log('Confirming PaymentIntent...');
       const { error } = await stripe.confirmPayment({
         elements,
         clientSecret,
-        redirect: 'if_required' // This prevents automatic redirection
+        redirect: 'if_required', // Prevent automatic redirection
       });
 
       if (error) {
@@ -92,12 +100,19 @@ const PaymentForm = ({
         setPaymentError(`Payment confirmation failed: ${error.message}`);
         setIsProcessing(false);
       } else {
-        console.log('Payment succeeded');
+        console.log('Payment succeeded!');
+        
+        // Log the user information and any other relevant details
+        console.log('User details:', { firstName, email, mobile });
+
         // Close the payment window
+        console.log('Closing the payment window...');
         onClose();
         
         // Run handleSubmit
+        console.log('Calling handleSubmit...');
         await handleSubmit();
+        console.log('handleSubmit executed successfully.');
       }
     } catch (err) {
       console.error('Unexpected error occurred:', err);
@@ -137,9 +152,6 @@ const PaymentForm = ({
     </div>
   );
 };
-
-
-
 
 
 export default function BookingDisplayMain() {
@@ -793,6 +805,9 @@ export default function BookingDisplayMain() {
     
     const selectedStaff = e.target.value;
     setSelectedAesthetician(selectedStaff);
+
+    setAvailableTimeSlots([]);
+    setSelectedDate(null);
 
     // Get the staff variant ID
     const variantId = staffVariantMap[selectedStaff];
