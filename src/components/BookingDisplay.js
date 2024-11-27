@@ -102,14 +102,12 @@ const PaymentForm = ({
       } else {
         console.log('Payment succeeded!');
         
-        // Log the user information and any other relevant details
         console.log('User details:', { firstName, email, mobile });
-
-        // Close the payment window
+  
         console.log('Closing the payment window...');
         onClose();
         
-        // Run handleSubmit
+        // Modify handleSubmit call to work without an event
         console.log('Calling handleSubmit...');
         await handleSubmit();
         console.log('handleSubmit executed successfully.');
@@ -120,6 +118,7 @@ const PaymentForm = ({
       setIsProcessing(false);
     }
   };
+
 
   return (
     <div className="w-full space-y-4">
@@ -539,7 +538,9 @@ export default function BookingDisplayMain() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+        e.preventDefault();
+      }
 
     // Split the full name
     const nameParts = firstName.trim().split(" ");
