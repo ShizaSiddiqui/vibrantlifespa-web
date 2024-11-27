@@ -62,7 +62,7 @@ const PaymentForm = ({
         },
         body: JSON.stringify({
           currency: "usd",
-          servicesTotal: 2900, // $29.00
+          servicesTotal: 200, // $2.00
           tip: 0,
         }),
       });
@@ -213,7 +213,7 @@ export default function BookingDisplayMain() {
         },
         body: JSON.stringify({
           currency: 'usd',
-          servicesTotal: 2900, // $29.00
+          servicesTotal: 200, // $2.00
           tip: 0
         }),
       });
@@ -951,7 +951,7 @@ export default function BookingDisplayMain() {
             Let's get you scheduled
           </h1>
           <div className="fixed bottom-1 right-2 text-[8px] text-gray-400">
-            v1.1.0
+            v1.1.1
           </div>
           {isSignedIn ? (
             <h2 className="text-lg font-semibold mb-4 text-center">Welcome!</h2>
