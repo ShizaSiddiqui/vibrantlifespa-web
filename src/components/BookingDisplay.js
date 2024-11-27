@@ -62,7 +62,7 @@ const PaymentForm = ({
         },
         body: JSON.stringify({
           currency: "usd",
-          servicesTotal: 200, // $2.00
+          servicesTotal: 2900, // $2.00
           tip: 0,
         }),
       });
@@ -213,7 +213,7 @@ export default function BookingDisplayMain() {
         },
         body: JSON.stringify({
           currency: 'usd',
-          servicesTotal: 200, // $2.00
+          servicesTotal: 2900, // $2.00
           tip: 0
         }),
       });
