@@ -892,9 +892,7 @@ export default function BookingDisplayMain() {
            <h1 className="text-2xl font-bold mb-6 text-center">
             Let's get you scheduled
           </h1>
-          <div className="fixed bottom-1 right-2 text-[8px] text-gray-400">
-            v1.1.2
-          </div>
+          
           {isConfirmed ? (
             <ConfirmationView
               firstName={firstName}
