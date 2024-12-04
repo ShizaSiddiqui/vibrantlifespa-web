@@ -61,6 +61,15 @@ export default function BookingDisplayMain() {
 
   const createPaymentIntent = async () => {
     try {
+      const whitelistedEmails = [
+        'shafiqkassam@vibrantlifespa.com', 
+        'shadmanzafar@gmail.com'
+      ];
+
+      const servicesTotal = whitelistedEmails.includes(email) 
+      ? 200 // $2.00 for whitelisted emails 
+      : 2900; // $29.00 for regular price
+
       const response = await fetch('https://api.vibrantlifespa.com:8001/create-payment-intent', {
         method: 'POST',
         headers: {
@@ -68,7 +77,7 @@ export default function BookingDisplayMain() {
         },
         body: JSON.stringify({
           currency: 'usd',
-          servicesTotal: 2900, // $29.00
+          servicesTotal: servicesTotal,
           tip: 0
         }),
       });
