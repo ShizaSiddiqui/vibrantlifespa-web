@@ -62,7 +62,7 @@ export default function BookingDisplayMain() {
   const createPaymentIntent = async () => {
     try {
       const whitelistedEmails = [
-        'shafiq@malinator',
+        'shafiq@mailinator.com',
         'shafiqkassam@vibrantlifespa.com', 
         'shadmanzafar@gmail.com'
       ];
