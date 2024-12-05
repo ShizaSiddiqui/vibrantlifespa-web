@@ -67,7 +67,7 @@ export default function BookingDisplayMain() {
       ];
 
       const servicesTotal = whitelistedEmails.includes(email) 
-      ? 200 // $2.00 for whitelisted emails 
+      ? 50 // $0.50 for whitelisted emails 
       : 2900; // $29.00 for regular price
 
       const response = await fetch('https://api.vibrantlifespa.com:8001/create-payment-intent', {
@@ -902,7 +902,7 @@ export default function BookingDisplayMain() {
             Let's get you scheduled
           </h1>
           <div className="fixed bottom-1 right-2 text-[8px] text-gray-400">
-            v1.1.2
+            v1.1.3
           </div>
           {isConfirmed ? (
             <ConfirmationView
